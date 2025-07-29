@@ -39,6 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+<<<<<<< HEAD
 
 # url storage
 urls.json
@@ -46,3 +47,6 @@ users.json
 
 # clerk configuration (can include secrets)
 /.clerk/
+=======
+.env
+>>>>>>> c5643b0be1c0b56b4a1db3b390322be4575dfddd
