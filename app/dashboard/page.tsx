@@ -13,25 +13,37 @@ export default function DashboardPage() {
 
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
 
-  // Step 1: Fetch Convex user ID
-  const convexUserId = useQuery(
-    api.users.getCurrentUserId,
+  // Step 1: Fetch Convex user document
+  const convexUser = useQuery(
+    api.users.getUserByClerkId,
     clerkUser ? { clerkUserId: clerkUser.id } : 'skip'
   );
 
   // Step 2: Fetch URLs based on Convex user ID
   const userUrls = useQuery(
     api.urls.getUrlsByUser,
-    convexUserId ? { userId: convexUserId } : 'skip'
+    convexUser ? { userId: convexUser._id } : 'skip'
   );
 
-  const loading = !userLoaded || convexUserId === undefined || userUrls === undefined;
+  const loading = !userLoaded || convexUser === undefined || userUrls === undefined;
 
   const deleteUrl = useMutation(api.urls.deleteUrl);
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      const writable = typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+      if (writable) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       setCopied(text);
       setTimeout(() => setCopied(null), 2000);
     } catch (err) {
@@ -82,6 +94,13 @@ export default function DashboardPage() {
                 <h1 className="text-2xl font-bold text-white">Dashboard</h1>
                 <p className="text-sm text-gray-400">Welcome back, {clerkUser.fullName || clerkUser.firstName || 'User'}</p>
               </div>
+              {clerkUser?.imageUrl && (
+                <img
+                  src={clerkUser.imageUrl}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full border border-white/20"
+                />
+              )}
             </div>
             <Link
               href="/"

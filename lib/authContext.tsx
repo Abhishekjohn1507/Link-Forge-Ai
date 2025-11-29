@@ -2,6 +2,7 @@
 
 import { createContext, useContext, ReactNode, useEffect, useMemo } from 'react';
 import { useUser, useAuth as useClerkAuth } from '@clerk/nextjs';
+import { convex } from '@/lib/convex';
 
 export interface User {
   _id: string;
@@ -47,18 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const saveUserToConvex = async () => {
       if (user) {
         try {
-          // Import the convex client and api
-          const { ConvexHttpClient } = await import('convex/browser');
           const { api } = await import('@/convex/_generated/api');
-          
-          // Create a client
-          const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-          
-          // Save the user to Convex (using mutation)
           await convex.mutation(api.users.createUserMutation, {
             id: user._id,
             email: user.email,
             name: user.name,
+            image: user.image,
+            emailVerified: user.emailVerified,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           });
@@ -96,15 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return null;
     
     try {
-      // Import the convex client and api
-      const { ConvexHttpClient } = await import('convex/browser');
       const { api } = await import('@/convex/_generated/api');
-      
-      // Create a client
-      const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-      
-      // Get the Convex user by Clerk ID
-      const convexUser = await convex.query(api.users.getUserByClerkId, { clerkUserId: user._id });
+      const convexUser = await convex.query(api.users.getUserByClerkId, { 
+        clerkUserId: user._id 
+      });
       
       if (convexUser) {
         return convexUser._id;

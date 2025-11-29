@@ -6,12 +6,13 @@ import { useAuth } from './authContext';
 
 export function useConvexUser() {
   const { user } = useAuth();
-  
-  // Get the Convex user by Clerk ID
-  const { data: convexUser, isLoading } = useQuery(
+
+  const convexUser = useQuery(
     api.users.getUserByClerkId,
-    user ? { clerkId: user._id } : 'skip'
+    user ? { clerkUserId: user._id } : 'skip'
   );
+
+  const isLoading = !!user && convexUser === undefined;
 
   return {
     convexUser,

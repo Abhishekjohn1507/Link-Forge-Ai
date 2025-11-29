@@ -1,29 +1,31 @@
-// convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    clerkUserId: v.string(), // Renamed from `id` to `clerkUserId`
+    clerkUserId: v.string(),
     email: v.string(),
     name: v.string(),
-    billingInfo: v.optional(
-      v.object({
-        clerkUserId: v.string(),
-        passwordHash: v.string(),
-        resetPasswordToken: v.optional(v.string()),
-        resetPasswordExpires: v.optional(v.float64()),
-      })
-    ),
-    createdAt: v.float64(),
-    updatedAt: v.float64(),
-  }).index("by_clerkUserId", ["clerkUserId"]),
-
+    image: v.optional(v.string()),
+    emailVerified: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clerk_id", ["clerkUserId"])
+    .index("by_email", ["email"]),
   urls: defineTable({
-    userId: v.optional(v.string()), // allow null/undefined
     originalUrl: v.string(),
     shortCode: v.string(),
+    userId: v.optional(v.id("users")),
+    createdAt: v.number(),
     clicks: v.number(),
-    createdAt: v.float64(),
-  }).index("by_userId", ["userId"]),
+    lastClicked: v.optional(v.number()),
+  })
+    .index("by_short_code", ["shortCode"])
+    .index("by_user", ["userId"]),
+  clicks: defineTable({
+    urlId: v.id("urls"),
+    clickedAt: v.number(),
+  })
+    .index("by_url", ["urlId"]),
 });
