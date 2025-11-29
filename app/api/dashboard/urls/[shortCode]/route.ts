@@ -37,7 +37,7 @@ export async function PUT(
     
     try {
       // First try to get user by Clerk ID
-      user = await convex.query(api.users.getUserByClerkId, { clerkId: userId });
+      user = await convex.query(api.users.getUserByClerkId, { clerkUserId: userId });
       
       // If found, use the Convex user ID
       if (user) {
@@ -160,7 +160,7 @@ export async function DELETE(
     
     try {
       // First try to get user by Clerk ID
-      user = await convex.query(api.users.getUserByClerkId, { clerkId: userId });
+      user = await convex.query(api.users.getUserByClerkId, { clerkUserId: userId });
       
       // If found, use the Convex user ID
       if (user) {
@@ -260,7 +260,7 @@ export async function GET(
     
     try {
       // First try to get user by Clerk ID
-      user = await convex.query(api.users.getUserByClerkId, { clerkId: userId });
+      user = await convex.query(api.users.getUserByClerkId, { clerkUserId: userId });
       
       // If found, use the Convex user ID
       if (user) {

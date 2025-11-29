@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       
       // First try to get user by Clerk ID
       try {
-        const user = await convex.query(api.users.getUserByClerkId, { clerkId });
+        const user = await convex.query(api.users.getUserByClerkId, { clerkUserId: clerkId });
         if (user) {
           userId = user._id as Id<"users">;
         } else {
