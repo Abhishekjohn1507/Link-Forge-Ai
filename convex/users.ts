@@ -1,59 +1,71 @@
-// convex/users.ts
-import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
-// Mutation to create user
+// Create or update user
 export const createUserMutation = mutation({
   args: {
-    id: v.string(), // Clerk user ID
+    id: v.string(),
     email: v.string(),
     name: v.string(),
-    billingInfo: v.optional(
-      v.object({
-        clerkUserId: v.string(),
-        passwordHash: v.string(),
-        resetPasswordToken: v.optional(v.string()),
-        resetPasswordExpires: v.optional(v.float64()),
-      })
-    ),
-    createdAt: v.float64(),
-    updatedAt: v.float64(),
+    image: v.optional(v.string()),
+    emailVerified: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    const existingUser = await ctx.db
+    // Check if user already exists
+    const existing = await ctx.db
       .query("users")
-      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", args.id))
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.id))
       .first();
 
-    if (existingUser) return existingUser._id;
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        email: args.email,
+        name: args.name,
+        image: args.image,
+        emailVerified: args.emailVerified,
+        updatedAt: args.updatedAt,
+      });
+      return existing._id;
+    }
 
-    return await ctx.db.insert("users", {
-      ...args,
-      clerkUserId: args.id, // make sure you store it
+    // Create new user
+    const userId = await ctx.db.insert("users", {
+      clerkUserId: args.id,
+      email: args.email,
+      name: args.name,
+      image: args.image,
+      emailVerified: args.emailVerified,
+      createdAt: args.createdAt,
+      updatedAt: args.updatedAt,
     });
+
+    return userId;
   },
 });
 
-// Query to get current user's Convex _id by Clerk ID
-export const getCurrentUserId = query({
-  args: { clerkUserId: v.string() },
+// Get user by Clerk ID
+export const getUserByClerkId = query({
+  args: {
+    clerkUserId: v.string(),
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", args.clerkUserId))
+      .withIndex("by_clerk_id", (q) => q.eq("clerkUserId", args.clerkUserId))
       .first();
 
-    return user?._id ?? null;
+    return user;
   },
 });
 
-// Query to get full user document by Clerk ID
-export const getUserByClerkId = query({
-  args: { clerkUserId: v.string() },
+// Get user by Convex ID
+export const getUserById = query({
+  args: {
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_clerkUserId", (q) => q.eq("clerkUserId", args.clerkUserId))
-      .first();
+    return await ctx.db.get(args.userId);
   },
 });

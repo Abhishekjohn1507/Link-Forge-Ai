@@ -1,76 +1,133 @@
-// convex/urls.ts
-import { query, mutation } from './_generated/server';
-import { v } from 'convex/values';
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { nanoid } from "nanoid";
 
-// Get all URLs for a specific user
-export const getUrlsByUser = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query('urls')
-      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
-      .collect();
-  },
-});
-
-// Delete a URL by ID
-export const deleteUrl = mutation({
-  args: { urlId: v.id('urls') },
-  handler: async (ctx, args) => {
-    await ctx.db.delete(args.urlId);
-  },
-});
-
-// Get a URL by its shortcode
-export const getUrlByShortCode = query({
-  args: { shortCode: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query('urls')
-      .filter((q) => q.eq(q.field('shortCode'), args.shortCode))
-      .first();
-  },
-});
-
-// Record a click (you mentioned it, make sure it exists)
-export const recordClick = mutation({
-  args: { urlId: v.id("urls") },
-  handler: async (ctx, args) => {
-    const existing = await ctx.db.get(args.urlId);
-    if (!existing) return;
-    await ctx.db.patch(args.urlId, {
-      clicks: (existing.clicks || 0) + 1,
-    });
-  },
-});
 export const createUrl = mutation({
   args: {
     originalUrl: v.string(),
-    userId: v.optional(v.string()), // can be null
-    alias: v.optional(v.string()),  // ✅ add this
+    userId: v.optional(v.id("users")),
+    alias: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Generate a random 6-character string if no alias is provided
-    const shortCode = args.alias ?? Math.random().toString(36).substring(2, 8);
+    const shortCode = args.alias || nanoid(8);
 
-    // Optional: Check if alias is already taken
     const existing = await ctx.db
       .query("urls")
-      .filter((q) => q.eq(q.field("shortCode"), shortCode))
+      .withIndex("by_short_code", (q) => q.eq("shortCode", shortCode))
       .first();
-
     if (existing) {
-      throw new Error("Alias already in use. Please choose a different one.");
+      throw new Error("Alias already exists");
     }
 
+    const now = Date.now();
     const urlId = await ctx.db.insert("urls", {
       originalUrl: args.originalUrl,
-      userId: args.userId ?? null,
       shortCode,
-      createdAt: Date.now(),
-      clicks: 0, // Initialize clicks counter
+      userId: args.userId ?? undefined,
+      createdAt: now,
+      clicks: 0,
+      lastClicked: undefined,
     });
 
-    return { shortCode };
+    return await ctx.db.get(urlId);
+  },
+});
+
+export const getUrlsByUser = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const urls = await ctx.db
+      .query("urls")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return urls.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+export const getUrlByShortCode = query({
+  args: {
+    shortCode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("urls")
+      .withIndex("by_short_code", (q) => q.eq("shortCode", args.shortCode))
+      .first();
+  },
+});
+
+export const updateUrl = mutation({
+  args: {
+    urlId: v.id("urls"),
+    alias: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("urls")
+      .withIndex("by_short_code", (q) => q.eq("shortCode", args.alias))
+      .first();
+    if (existing && existing._id !== args.urlId) {
+      return null;
+    }
+    await ctx.db.patch(args.urlId, { shortCode: args.alias });
+    return await ctx.db.get(args.urlId);
+  },
+});
+
+export const deleteUrl = mutation({
+  args: {
+    urlId: v.id("urls"),
+  },
+  handler: async (ctx, args) => {
+    const clicks = await ctx.db
+      .query("clicks")
+      .withIndex("by_url", (q) => q.eq("urlId", args.urlId))
+      .collect();
+    for (const c of clicks) {
+      await ctx.db.delete(c._id);
+    }
+    await ctx.db.delete(args.urlId);
+    return true;
+  },
+});
+
+export const recordClick = mutation({
+  args: {
+    shortCode: v.optional(v.string()),
+    urlId: v.optional(v.id("urls")),
+  },
+  handler: async (ctx, args) => {
+    let url = null as any;
+    if (args?.urlId) {
+      url = await ctx.db.get(args.urlId);
+    } else if (args?.shortCode) {
+      url = await ctx.db
+        .query("urls")
+        .withIndex("by_short_code", (q) => q.eq("shortCode", args.shortCode!))
+        .first();
+    }
+    if (!url) return null;
+    await ctx.db.insert("clicks", { urlId: url._id, clickedAt: Date.now() });
+    await ctx.db.patch(url._id, { clicks: (url.clicks ?? 0) + 1, lastClicked: Date.now() });
+    return true;
+  },
+});
+
+export const getUrlAnalytics = query({
+  args: {
+    urlId: v.id("urls"),
+  },
+  handler: async (ctx, args) => {
+    const url = await ctx.db.get(args.urlId);
+    if (!url) return null;
+    const clicks = await ctx.db
+      .query("clicks")
+      .withIndex("by_url", (q) => q.eq("urlId", args.urlId))
+      .order("desc")
+      .collect();
+    return { url, clicks };
   },
 });

@@ -14,7 +14,7 @@ import { useConvexUser } from '@/lib/useconvexuser';
 export default function Home() {
   const { signOut } = useClerk();
   const { user: clerkUser } = useUser();
-  const { convexUserId } = useConvexUser();
+  const { convexUserId, isLoading: isConvexLoading } = useConvexUser();
   const [url, setUrl] = useState('');
   const [shortCode, setShortCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,6 +22,7 @@ export default function Home() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
 const createUrl = useMutation(api.urls.createUrl);
 
@@ -33,9 +34,14 @@ const createUrl = useMutation(api.urls.createUrl);
     setError('');
 
     try {
+      if (clerkUser && !convexUserId) {
+        setError('Please wait, loading your profile...');
+        setIsLoading(false);
+        return;
+      }
       const result = await createUrl({
         originalUrl: url,
-        userId: convexUserId ?? undefined,
+        userId: convexUserId ? convexUserId : undefined,
       });
 
       if (result) {
@@ -52,8 +58,24 @@ const createUrl = useMutation(api.urls.createUrl);
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      const writable = typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+      if (writable) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setToastMessage('Copied to clipboard');
+      setTimeout(() => setToastMessage(null), 2000);
     } catch (err) {
+      setToastMessage('Failed to copy');
+      setTimeout(() => setToastMessage(null), 2000);
       console.error('Failed to copy:', err);
     }
   };
@@ -174,6 +196,25 @@ const createUrl = useMutation(api.urls.createUrl);
             <div className="flex items-center space-x-4">
               {clerkUser ? (
                 <>
+                  <div className="flex items-center space-x-3 pr-2">
+                    {clerkUser.imageUrl && (
+                      <img
+                        src={clerkUser.imageUrl}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full border border-white/20"
+                      />
+                    )}
+                    
+                    <div className="text-right">
+                      {/* <div className="text-white text-sm font-semibold">
+                        {clerkUser.fullName || clerkUser.firstName || 'User'}
+                      </div> */}
+                      {/* <div className="text-xs text-gray-400">Signed in</div> */}
+                      {/* {convexUserId && (
+                        <div className="text-[10px] text-gray-500">ID: {convexUserId}</div>
+                      )} */}
+                    </div>
+                  </div>
                   <Link
                     href="/dashboard"
                     className="text-gray-300 hover:text-white font-medium transition-colors"
@@ -254,6 +295,7 @@ const createUrl = useMutation(api.urls.createUrl);
         <div className="max-w-4xl mx-auto mb-16">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
             <h2 className="text-3xl font-bold text-white mb-8 text-center">Forge Your Link</h2>
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="url" className="block text-sm font-medium text-gray-300 mb-3">
@@ -272,16 +314,16 @@ const createUrl = useMutation(api.urls.createUrl);
               
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || (!!clerkUser && isConvexLoading)}
                 className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-4 px-8 rounded-xl hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
               >
-                {isLoading ? (
+                {isLoading || (!!clerkUser && isConvexLoading) ? (
                   <div className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Forging...
+                    {isConvexLoading ? 'Loading profile...' : 'Forging...'}
                   </div>
                 ) : (
                   'Forge URL'
@@ -352,6 +394,11 @@ const createUrl = useMutation(api.urls.createUrl);
           </div>
         </div>
       </main>
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 bg-black/80 text-white px-4 py-2 rounded-lg shadow-lg border border-white/10">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
