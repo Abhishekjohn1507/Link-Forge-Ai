@@ -7,8 +7,9 @@ export function ClerkProviderWrapper({ children }: { children: React.ReactNode }
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: dark,
+        
         variables: {
+
           colorPrimary: '#8b5cf6',
           colorBackground: '#0f0f23',
           colorInputBackground: '#1f2937',

@@ -10,12 +10,14 @@ import { Id } from '@/convex/_generated/dataModel';
 
 export default function Dashboard() {
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
-  // const { isAuthenticated } = useConvexAuth(); // Removed as it's unused
 
-  const convexUserId = useQuery(
-    api.users.getCurrentUserId,
+  const convexUser = useQuery(
+    api.users.getUserByClerkId,
     clerkUser ? { clerkUserId: clerkUser.id } : 'skip'
   );
+
+  // Extract just the ID from the user object
+  const convexUserId = convexUser?._id;
 
   const userUrls = useQuery(
     api.urls.getUrlsByUser,
@@ -34,10 +36,10 @@ export default function Dashboard() {
         id: clerkUser.id,
         email: clerkUser.primaryEmailAddress?.emailAddress || '',
         name: clerkUser.fullName || '',
-        billingInfo: {
-          clerkUserId: clerkUser.id,
-          passwordHash: '',
-        },
+        // billingInfo: {
+        //   clerkUserId: clerkUser.id,
+        //   passwordHash: '',
+        // },
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -122,7 +124,7 @@ export default function Dashboard() {
               <UrlTable
                 urls={userUrls?.map(url => ({
                   ...url,
-                  updatedAt: url.createdAt // Add missing updatedAt field
+                  updatedAt: url.createdAt
                 }))}
                 copied={copied}
                 copyToClipboard={copyToClipboard}

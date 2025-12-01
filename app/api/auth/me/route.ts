@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Get user from Convex
     try {
       // First try to get user by Clerk ID
-      let user = await convex.query(api.users.getUserByClerkId, { clerkId: userId });
+      let user = await convex.query(api.users.getUserByClerkId, { clerkUserId: userId });
       
       // If not found, try the legacy way (direct ID lookup)
       if (!user) {
