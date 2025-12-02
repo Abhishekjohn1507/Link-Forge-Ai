@@ -16,22 +16,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    try {
-      // Generate password reset token with Convex action
-      const result = await convex.action(api.actions.passwordReset.generateAndStoreResetToken, { email });
-      
-      return NextResponse.json({ token: result.token });
-    } catch (error) {
-      console.error('Convex token generation error:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Token generation failed';
-      const status = errorMessage.includes('not found') ? 404 : 500;
-      
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: errorMessage },
-        { status }
+        { error: 'Invalid email format' },
+        { status: 400 }
       );
     }
+
+    // try {
+    //   // Generate password reset token with Convex action
+    //   const result = await convex.action(api.passwordReset.generateAndStoreResetToken, { email });
+      
+    //   // Don't return the token directly - send via email instead
+    //   return NextResponse.json({ 
+    //     message: 'If an account exists with this email, you will receive a password reset link shortly' 
+    //   });
+    // } catch (error) {
+    //   console.error('Convex token generation error:', error);
+      
+    //   // Always return the same message to prevent email enumeration
+    //   return NextResponse.json({
+    //     message: 'If an account exists with this email, you will receive a password reset link shortly'
+    //   });
+    // }
   } catch (error) {
     console.error('Reset token generation error:', error);
     return NextResponse.json(
@@ -54,29 +63,35 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate password strength
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
+        { error: 'Password must be at least 8 characters long' },
         { status: 400 }
       );
     }
 
-    try {
-      // Reset password with Convex (using action instead of mutation)
-      const result = await convex.action(api.users.resetPasswordWithToken, { token, newPassword });
+    // try {
+    //   // Reset password with Convex action (not mutation)
+    //   const result = await convex.action(api.passwordReset.resetPasswordWithToken, { 
+    //     token, 
+    //     newPassword 
+    //   });
       
-      return NextResponse.json(result);
-    } catch (error) {
-      console.error('Convex password reset error:', error);
+    //   return NextResponse.json({ 
+    //     success: true,
+    //     message: 'Password has been reset successfully' 
+    //   });
+    // } catch (error) {
+    //   console.error('Convex password reset error:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
-      const status = errorMessage.includes('Invalid or expired token') ? 400 : 500;
+    //   const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+    //   const status = errorMessage.includes('Invalid or expired token') ? 400 : 500;
       
-      return NextResponse.json(
-        { error: errorMessage },
-        { status }
-      );
-    }
+    //   return NextResponse.json(
+    //     { error: errorMessage },
+    //     { status }
+    //   );
+    // }
   } catch (error) {
     console.error('Password reset error:', error);
     return NextResponse.json(

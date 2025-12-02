@@ -14,6 +14,7 @@ interface PageProps {
 export default function RedirectPage({ params }: PageProps) {
   const router = useRouter();
   const [shortCode, setShortCode] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   const url = useQuery(api.urls.getUrlByShortCode, { shortCode: shortCode || '' });
   const recordClickMutation = useMutation(api.urls.recordClick);
@@ -33,9 +34,10 @@ export default function RedirectPage({ params }: PageProps) {
   }, [params, router]);
 
   useEffect(() => {
-    if (!shortCode) return;
+    if (!shortCode || isRedirecting) return;
     
     if (url) {
+      setIsRedirecting(true);
       // Record the click - no longer sending user-specific data
       recordClickMutation({
         urlId: url._id,
@@ -48,7 +50,7 @@ export default function RedirectPage({ params }: PageProps) {
       // URL not found, redirect to home page
       router.push('/');
     }
-  }, [url, shortCode, recordClickMutation, router]);
+  }, [url, shortCode, recordClickMutation, router, isRedirecting]);
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">

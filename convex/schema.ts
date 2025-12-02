@@ -28,4 +28,13 @@ export default defineSchema({
     clickedAt: v.number(),
   })
     .index("by_url", ["urlId"]),
+ passwordResetTokens: defineTable({
+  email: v.string(),
+  token: v.string(),
+  createdAt: v.number(),
+  expiresAt: v.number(),
+  used: v.boolean(),
+})
+.index("by_email", ["email"])
+.index("by_token", ["token"]),
 });

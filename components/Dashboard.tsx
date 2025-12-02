@@ -13,13 +13,13 @@ export default function Dashboard() {
   // const { isAuthenticated } = useConvexAuth(); // Removed as it's unused
 
   const convexUserId = useQuery(
-    api.users.getCurrentUserId,
+    api.users.getUserByClerkId,
     clerkUser ? { clerkUserId: clerkUser.id } : 'skip'
   );
 
   const userUrls = useQuery(
     api.urls.getUrlsByUser,
-    convexUserId ? { userId: convexUserId } : 'skip'
+convexUserId ? { userId: convexUserId._id } : 'skip'
   );
 
   const deleteUrlMutation = useMutation(api.urls.deleteUrl);
@@ -34,10 +34,10 @@ export default function Dashboard() {
         id: clerkUser.id,
         email: clerkUser.primaryEmailAddress?.emailAddress || '',
         name: clerkUser.fullName || '',
-        billingInfo: {
-          clerkUserId: clerkUser.id,
-          passwordHash: '',
-        },
+        // billingInfo: {
+        //   clerkUserId: clerkUser.id,
+        //   passwordHash: '',
+        // },
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });

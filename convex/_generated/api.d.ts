@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as passwordReset from "../passwordReset.js";
 import type * as urls from "../urls.js";
 import type * as users from "../users.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  passwordReset: typeof passwordReset;
   urls: typeof urls;
   users: typeof users;
 }>;

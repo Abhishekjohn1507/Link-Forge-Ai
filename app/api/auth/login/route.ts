@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Authenticate user with Convex
-      const user = await convex.mutation(api.users.authenticateUser, { email, password });
+      const user = await convex.query(api.users.getUserByClerkId, { clerkUserId: email });
       
       if (!user) {
         return NextResponse.json(

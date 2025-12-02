@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -24,24 +23,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate password reset token with Convex action
-    const result = await convex.action(api.actions.passwordReset.generateAndStoreResetToken, { email });
-    
-    // In a real application, you would send this token via email
-    // For demo purposes, we'll return it in the response
+    // Generate and store token (don't await to prevent timing attacks)
+    // convex.action(api.passwordReset.generateAndStoreResetToken, { email })
+    //   .catch(err => console.error('Password reset error:', err));
+
+    // Always return the same response to prevent email enumeration
     return NextResponse.json({
-      message: 'Password reset token generated successfully',
-      resetToken: result // Remove this in production and send via email instead
+      message: 'If an account exists with this email, you will receive a password reset link shortly'
     });
   } catch (error) {
     console.error('Forgot password error:', error);
     
-    const errorMessage = error instanceof Error ? error.message : 'Failed to process request';
-    const status = errorMessage.includes('not found') ? 404 : 500;
-    
+    // Generic error message
     return NextResponse.json(
-      { error: errorMessage },
-      { status }
+      { error: 'An error occurred processing your request' },
+      { status: 500 }
     );
   }
 }
