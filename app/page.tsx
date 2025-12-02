@@ -3,13 +3,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useClerk, useUser } from '@clerk/nextjs';
 import ClerkForgotPassword from '@/components/ClerkForgotPassword';
 import ClerkSignIn from '@/components/ClerkSignIn';
 import ClerkSignUp from '@/components/ClerkSignUp';
 import { useConvexUser } from '@/lib/useconvexuser';
+import LinkShortener from '@/components/LinkShortener';
+import QrGeneration from '@/components/home/QrGeneration';
 
 export default function Home() {
   const { signOut } = useClerk();
@@ -25,6 +27,10 @@ export default function Home() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
 const createUrl = useMutation(api.urls.createUrl);
+const userUrls = useQuery(
+  api.urls.getUrlsByUser,
+  convexUserId ? { userId: convexUserId } : 'skip'
+);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,6 +318,7 @@ const createUrl = useMutation(api.urls.createUrl);
                 />
               </div>
               
+              
               <button
                 type="submit"
                 disabled={isLoading || (!!clerkUser && isConvexLoading)}
@@ -355,9 +362,61 @@ const createUrl = useMutation(api.urls.createUrl);
                   >
                     Copy
                   </button>
+                  <a
+                    href={`${window.location.origin}/${shortCode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-500/20 text-blue-300 px-6 py-3 rounded-lg hover:bg-blue-500/30 transition-all border border-blue-500/30"
+                  >
+                    Open
+                  </a>
+                </div>
+                <div className="mt-6">
+                  <QrGeneration shortenedUrl={`${window.location.origin}/${shortCode}`} />
                 </div>
               </div>
             )}
+            {/* {Array.isArray(userUrls) && userUrls.length > 0 && (
+              <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-xl">
+                <h3 className="text-xl font-semibold text-white mb-4">Your recent links</h3>
+                <div className="space-y-4">
+                  {userUrls.slice(0, 5).map((u) => (
+                    <div key={u._id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border border-white/10 rounded-lg p-4">
+                      <div className="min-w-0">
+                        <div className="text-gray-300 text-sm truncate">{u.originalUrl}</div>
+                        <a
+                          href={`${window.location.origin}/${u.shortCode}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-300 font-mono text-sm"
+                        >
+                          {`${window.location.origin}/${u.shortCode}`}
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => copyToClipboard(`${window.location.origin}/${u.shortCode}`)}
+                          className="bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 border border-white/20"
+                        >
+                          Copy
+                        </button>
+                        <a
+                          href={`${window.location.origin}/${u.shortCode}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-blue-500/20 text-blue-300 px-4 py-2 rounded-lg hover:bg-blue-500/30 border border-blue-500/30"
+                        >
+                          Open
+                        </a>
+                        <span className="text-gray-400 text-xs px-2 py-1 bg-white/5 rounded">
+                          {u.clicks} clicks
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )} */}
           </div>
         </div>
 
@@ -393,7 +452,10 @@ const createUrl = useMutation(api.urls.createUrl);
             <p className="text-gray-300">Your links are protected with enterprise-grade security and encryption.</p>
           </div>
         </div>
+        {/* <LinkShortener /> */}
+        {shortCode ? null : null}
       </main>
+
       {toastMessage && (
         <div className="fixed bottom-6 right-6 bg-black/80 text-white px-4 py-2 rounded-lg shadow-lg border border-white/10">
           {toastMessage}
