@@ -7,9 +7,13 @@ import { api } from '@/convex/_generated/api';
 import { useUser } from '@clerk/nextjs';
 import { Id } from '@/convex/_generated/dataModel';
 import { UrlData } from '@/lib/types';
+import LinkPreview from './components/LinkPreview';
+import LinkPreviewGrid from './components/LinkPreviewGrid';
 
 export default function DashboardPage() {
   const [copied, setCopied] = useState<string | null>(null);
+
+  const [urlPreview, setUrlPreview] = useState<string | null>(null);
 
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
 
@@ -167,6 +171,7 @@ export default function DashboardPage() {
                             className="text-blue-300 hover:text-blue-200 transition-colors"
                           >
                             {url.originalUrl}
+                         
                           </a>
                         </div>
                       </td>
@@ -189,6 +194,12 @@ export default function DashboardPage() {
                               </svg>
                             )}
                           </button>
+                          <button
+                            onClick={() => setUrlPreview(`${origin}/${url.shortCode}`)}
+                            className="text-blue-300 hover:text-blue-200 transition-colors"
+                          >
+                            Preview
+                          </button>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-gray-300">{url.clicks ?? 0}</td>
@@ -210,7 +221,10 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        <LinkPreview urlPreview={urlPreview}  />
+        <LinkPreviewGrid urls={userUrls ?? []} />
       </main>
+    
     </div>
   );
 }
