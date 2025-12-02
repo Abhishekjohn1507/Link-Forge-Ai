@@ -10,12 +10,18 @@ import { Id } from '@/convex/_generated/dataModel';
 
 export default function Dashboard() {
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
-  // const { isAuthenticated } = useConvexAuth(); // Removed as it's unused
 
+<<<<<<< HEAD
   const convexUserId = useQuery(
+=======
+  const convexUser = useQuery(
+>>>>>>> 9828e331d881e89c064fbb3ec4acdb115bfcda1d
     api.users.getUserByClerkId,
     clerkUser ? { clerkUserId: clerkUser.id } : 'skip'
   );
+
+  // Extract just the ID from the user object
+  const convexUserId = convexUser?._id;
 
   const userUrls = useQuery(
     api.urls.getUrlsByUser,
@@ -122,7 +128,7 @@ convexUserId ? { userId: convexUserId._id } : 'skip'
               <UrlTable
                 urls={userUrls?.map(url => ({
                   ...url,
-                  updatedAt: url.createdAt // Add missing updatedAt field
+                  updatedAt: url.createdAt
                 }))}
                 copied={copied}
                 copyToClipboard={copyToClipboard}
