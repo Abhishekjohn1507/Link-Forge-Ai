@@ -11,11 +11,7 @@ import { Id } from '@/convex/_generated/dataModel';
 export default function Dashboard() {
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
 
-<<<<<<< HEAD
-  const convexUserId = useQuery(
-=======
   const convexUser = useQuery(
->>>>>>> 9828e331d881e89c064fbb3ec4acdb115bfcda1d
     api.users.getUserByClerkId,
     clerkUser ? { clerkUserId: clerkUser.id } : 'skip'
   );
@@ -25,7 +21,7 @@ export default function Dashboard() {
 
   const userUrls = useQuery(
     api.urls.getUrlsByUser,
-convexUserId ? { userId: convexUserId._id } : 'skip'
+    convexUserId ? { userId: convexUserId } : 'skip'
   );
 
   const deleteUrlMutation = useMutation(api.urls.deleteUrl);
